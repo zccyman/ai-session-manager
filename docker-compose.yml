@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ai-session-manager-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data/kilo.db:/app/data/kilo.db
+      - ./data/opencode.db:/app/data/opencode.db
+    environment:
+      - DATABASE_URL=sqlite:///data/kilo.db
+      - OPENCODE_DB_PATH=/app/data/opencode.db
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ai-session-manager-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
