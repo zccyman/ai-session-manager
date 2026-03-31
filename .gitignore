@@ -53,6 +53,9 @@ out/
 
 # Temporary files
 *.tmp
-*.tempbackend/G:
+*.temp
+
+# Markdown files (except README)
 *.md
 !README.md
+!README_CN.md

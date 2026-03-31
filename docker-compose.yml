@@ -3,7 +3,7 @@ version: '3.8'
 services:
   backend:
     build:
-      context: ./backend
+      context: ./ai-session-manager/backend
       dockerfile: Dockerfile
     container_name: ai-session-manager-backend
     ports:
@@ -18,7 +18,7 @@ services:
 
   frontend:
     build:
-      context: ./frontend
+      context: ./ai-session-manager/frontend
       dockerfile: Dockerfile
     container_name: ai-session-manager-frontend
     ports:

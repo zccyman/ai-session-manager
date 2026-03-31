@@ -1,0 +1,146 @@
+# AI Session Manager
+
+[English](README.md)
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+管理和可视化 Kilo Code 与 OpenCode AI 编程助手的历史会话数据的 Web 应用。
+
+## 功能特性
+
+- **集中管理** — 在一个地方查看来自 Kilo Code 和 OpenCode 的所有会话
+- **会话搜索** — 全文搜索会话内容，支持关键词高亮
+- **消息查看** — 浏览完整的对话历史，支持折叠/展开
+- **项目统计** — 会话数量、消息量和热门项目分析
+- **数据导出** — 将会话导出为 Markdown 或 JSON 格式
+- **多数据源** — 支持在 Kilo Code 和 OpenCode 数据源之间切换
+
+## 截图
+
+> **说明：** 截图将在首个版本发布后补充。
+
+| 会话列表 | 会话详情 |
+|:---:|:---:|
+| *截图占位符* | *截图占位符* |
+
+## 快速开始
+
+### 方式一：Docker 运行（推荐）
+
+```bash
+# 克隆仓库
+git clone https://github.com/zccyman/ai-session-manager.git
+cd ai-session-manager
+
+# 启动服务
+./start.sh docker
+
+# 停止服务
+./start.sh stop
+```
+
+访问 http://localhost:3000
+
+### 方式二：本地运行
+
+**后端：**
+```bash
+cd ai-session-manager/backend
+pip install -r requirements.txt
+./start.sh backend
+```
+
+**前端：**
+```bash
+cd ai-session-manager/frontend
+npm install
+npm run dev
+```
+
+## 配置
+
+后端环境变量（参考 `ai-session-manager/backend/.env.example`）：
+- `DATABASE_URL`: SQLite 数据库路径
+- `OPENCODE_DB_PATH`: OpenCode 数据库路径
+
+## API 文档
+
+启动后端后访问：http://localhost:8000/docs
+
+## 项目结构
+
+```
+ai-session-manager/
+├── .kilocode/                          # Kilo 配置
+│   ├── skills/
+│   │   └── dev-workflow/
+│   │       └── SKILL.md                # 开发工作流技能
+│   └── workflows/
+├── ai-session-manager/                 # 主应用代码
+│   ├── backend/                        # FastAPI 后端
+│   │   ├── app/
+│   │   │   ├── routes/                 # API 路由
+│   │   │   ├── services/               # 业务逻辑
+│   │   │   ├── models.py               # 数据模型
+│   │   │   ├── database.py             # 数据库连接
+│   │   │   └── main.py                 # FastAPI 应用
+│   │   └── requirements.txt
+│   └── frontend/                       # React 前端
+│       ├── src/
+│       │   ├── components/             # UI 组件
+│       │   ├── hooks/                  # React Hooks
+│       │   ├── services/               # API 客户端
+│       │   └── types/                  # TypeScript 类型
+│       └── package.json
+├── openspec/                           # OpenSpec 规格
+│   ├── changes/                        # 变更提案
+│   └── specs/                          # 项目规格
+├── docker-compose.yml
+├── start.sh                            # 启动脚本
+└── README.md
+```
+
+## 技术栈
+
+| 组件 | 技术 |
+|------|------|
+| 后端 | FastAPI + SQLite |
+| 前端 | React + TypeScript + Vite + TailwindCSS |
+| 搜索 | SQLite FTS5 |
+| 部署 | Docker + Docker Compose |
+
+## 开发指南
+
+### 本地开发环境搭建
+
+```bash
+# 克隆仓库
+git clone https://github.com/zccyman/ai-session-manager.git
+cd ai-session-manager
+
+# 启动后端
+cd ai-session-manager/backend
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+
+# 启动前端（另开终端）
+cd ai-session-manager/frontend
+npm install
+npm run dev
+```
+
+### 调试方法
+
+- **后端 API 文档**: http://localhost:8000/docs
+- **前端开发服务器**: http://localhost:5173
+- **后端日志**: 查看运行 uvicorn 的终端
+- **前端日志**: 查看浏览器 DevTools 控制台
+
+## 开源协议
+
+本项目基于 [MIT 协议](LICENSE) 开源。
+
+## 致谢
+
+- 为管理 [Kilo Code](https://kilo.ai/) 和 [OpenCode](https://github.com/opencode-ai/opencode) 会话数据而构建
+- 源于提取和归档 AI 编程知识的需求

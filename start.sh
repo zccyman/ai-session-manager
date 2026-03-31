@@ -14,14 +14,14 @@ create_data_dir() {
 
 start_backend() {
     echo "Starting backend..."
-    cd backend
+    cd ai-session-manager/backend
     pip install -r requirements.txt 2>/dev/null || true
     uvicorn app.main:app --host 0.0.0.0 --port 8000
 }
 
 start_frontend() {
     echo "Starting frontend..."
-    cd frontend
+    cd ai-session-manager/frontend
     npm install 2>/dev/null || true
     npm run dev
 }

@@ -1,0 +1,8 @@
+{
+  "skills": {
+    "dev-workflow": {
+      "path": ".kilocode/skills/dev-workflow/SKILL.md",
+      "user-invocable": true
+    }
+  }
+}
