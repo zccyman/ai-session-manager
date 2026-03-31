@@ -1,8 +1,7 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
 import { SearchBar } from './components/Search/SearchBar';
 import { SearchResults } from './components/Search/SearchResults';
 import { MessageThread } from './components/Messages/MessageThread';
-import { StatsPanel } from './components/Stats/StatsPanel';
 import { ExportButton } from './components/Export/ExportButton';
 import { useProjects, useSessions, useMessages, useSearch, useStats } from './hooks';
 import { api } from './services/api';
@@ -10,7 +9,7 @@ import type { DataSource } from './types';
 import {
   MessageSquare, Folder, ArrowLeft, FileText,
   CheckSquare, Square, Clock, Hash,
-  BarChart3, LayoutGrid, Copy, Check
+  BarChart3, LayoutGrid, Copy, Check, Download, FolderOpen
 } from 'lucide-react';
 
 type TimeFilter = 'all' | 'today' | 'week' | 'month';
@@ -26,11 +25,17 @@ export default function App() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
+  // Export to directory state
+  const [exportDir, setExportDir] = useState('G:\\knowledge\\source\\sessions-export');
+  const [exporting, setExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState<{ status: string; total: number; exported: number; failed: number } | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const { projects } = useProjects(dataSource);
   const { sessions, loading: sessionsLoading } = useSessions(dataSource, selectedProject ?? undefined);
   const { messages, loading: messagesLoading } = useMessages(dataSource, selectedSession);
   const { results: searchResults, loading: searchLoading } = useSearch(dataSource, searchQuery);
-  const { overview, projectStats, loading: statsLoading } = useStats(dataSource);
+  const { overview } = useStats(dataSource);
 
   const filteredSessions = useMemo(() => {
     let list = [...sessions];
@@ -43,25 +48,16 @@ export default function App() {
   }, [sessions, timeFilter, sortBy]);
 
   const toggleSelect = useCallback((id: string) => {
-    setSelectedIds(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
+    setSelectedIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
   }, []);
 
   const toggleAll = useCallback(() => {
-    if (selectedIds.size === filteredSessions.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(filteredSessions.map(s => s.id)));
-    }
+    setSelectedIds(selectedIds.size === filteredSessions.length ? new Set() : new Set(filteredSessions.map(s => s.id)));
   }, [selectedIds.size, filteredSessions]);
 
   const exportMarkdown = useCallback(async (sessionIds: string[]) => {
     for (const id of sessionIds) {
-      try { await api.exportMarkdown(id, dataSource); }
-      catch (e) { console.error('Export failed:', id, e); }
+      try { await api.exportMarkdown(id, dataSource); } catch (e) { console.error('Export failed:', id, e); }
     }
   }, [dataSource]);
 
@@ -76,12 +72,44 @@ export default function App() {
 
   const copySelectedMarkdown = useCallback(async () => {
     try {
-      const md = await api.batchGetMarkdown([...selectedIds], sessions, dataSource);
+      // Build combined markdown from selected sessions
+      let md = '';
+      for (const id of selectedIds) {
+        const s = sessions.find(s => s.id === id);
+        md += `# ${s?.title || 'Untitled'}\n\n`;
+        md += await api.getSessionMarkdown(id, dataSource);
+        md += '\n---\n\n';
+      }
       await navigator.clipboard.writeText(md);
       setCopiedId('__batch__');
       setTimeout(() => setCopiedId(null), 2000);
     } catch (e) { console.error('Batch copy failed:', e); }
   }, [selectedIds, sessions, dataSource]);
+
+  const startExportToDir = useCallback(async () => {
+    try {
+      setExporting(true);
+      setExportProgress(null);
+      const res = await api.startExportToDirectory(exportDir, dataSource);
+      // Poll progress
+      pollRef.current = setInterval(async () => {
+        try {
+          const p = await api.getExportProgress(res.task_id);
+          setExportProgress({ status: p.status, total: p.total, exported: p.exported, failed: p.failed });
+          if (p.status === 'completed' || p.status === 'failed') {
+            if (pollRef.current) clearInterval(pollRef.current);
+            setExporting(false);
+          }
+        } catch {
+          if (pollRef.current) clearInterval(pollRef.current);
+          setExporting(false);
+        }
+      }, 1000);
+    } catch (e) {
+      console.error('Export start failed:', e);
+      setExporting(false);
+    }
+  }, [exportDir, dataSource]);
 
   const sessionObj = sessions.find(s => s.id === selectedSession);
 
@@ -112,7 +140,6 @@ export default function App() {
           <span className="flex items-center gap-1"><MessageSquare className="w-3 h-3" />{overview?.total_messages?.toLocaleString() || 0} msgs</span>
           <span className="flex items-center gap-1"><Folder className="w-3 h-3" />{overview?.total_projects || 0} projects</span>
         </div>
-        <BarChart3 className="w-4 h-4 text-[#8F959E] cursor-pointer hover:text-[#3370FF] ml-2" title="Analytics" />
       </header>
 
       {/* Main */}
@@ -150,6 +177,7 @@ export default function App() {
           {/* Middle: Session List */}
           <section className="w-96 bg-white border-r border-[#DEE0E3] flex flex-col flex-shrink-0">
             <div className="p-3 border-b border-[#DEE0E3] space-y-2">
+              {/* Row 1: select + actions */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1">
                   <button onClick={toggleAll} className="p-1 text-[#8F959E] hover:text-[#3370FF]">
@@ -162,21 +190,20 @@ export default function App() {
                 {selectedIds.size > 0 && (
                   <div className="flex gap-1.5">
                     <button onClick={copySelectedMarkdown}
-                      className="flex items-center gap-1 px-2 py-1 text-xs rounded-md border border-[#DEE0E3] text-[#646A73] hover:bg-[#F0F1F2] transition-colors">
+                      className="flex items-center gap-1 px-2 py-1 text-xs rounded-md border border-[#DEE0E3] text-[#646A73] hover:bg-[#F0F1F2]">
                       {copiedId === '__batch__' ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
-                      复制选中 ({selectedIds.size})
+                      复制 ({selectedIds.size})
                     </button>
                     <ExportButton label="导出选中" count={selectedIds.size} onExport={() => exportMarkdown([...selectedIds])} />
                   </div>
                 )}
               </div>
+              {/* Row 2: filters + sort */}
               <div className="flex items-center gap-2">
                 <div className="flex bg-[#F0F1F2] rounded-md p-0.5">
                   {([['all', '全部'], ['today', '今天'], ['week', '7天'], ['month', '30天']] as [TimeFilter, string][]).map(([k, v]) => (
                     <button key={k} onClick={() => setTimeFilter(k)}
-                      className={`px-2 py-0.5 rounded text-xs ${
-                        timeFilter === k ? 'bg-white text-[#3370FF] shadow-sm' : 'text-[#8F959E]'
-                      }`}>{v}</button>
+                      className={`px-2 py-0.5 rounded text-xs ${timeFilter === k ? 'bg-white text-[#3370FF] shadow-sm' : 'text-[#8F959E]'}`}>{v}</button>
                   ))}
                 </div>
                 <select value={sortBy} onChange={e => setSortBy(e.target.value as SortBy)}
@@ -185,8 +212,55 @@ export default function App() {
                   <option value="messages">消息数</option>
                 </select>
               </div>
+              {/* Row 3: Export to directory */}
+              <div className="flex items-center gap-2 pt-1 border-t border-[#F0F1F2]">
+                <FolderOpen className="w-3.5 h-3.5 text-[#8F959E] flex-shrink-0" />
+                <input
+                  type="text"
+                  value={exportDir}
+                  onChange={e => setExportDir(e.target.value)}
+                  placeholder="导出目录路径"
+                  className="flex-1 text-xs border border-[#DEE0E3] rounded px-2 py-1 text-[#1F2329] placeholder-[#8F959E] focus:outline-none focus:border-[#3370FF]"
+                  disabled={exporting}
+                />
+                <button
+                  onClick={startExportToDir}
+                  disabled={exporting}
+                  className={`flex items-center gap-1 px-3 py-1 text-xs rounded-md font-medium transition-colors ${
+                    exporting
+                      ? 'bg-[#F0F1F2] text-[#8F959E] cursor-not-allowed'
+                      : 'bg-[#3370FF] text-white hover:bg-[#2860E1]'
+                  }`}>
+                  <Download className="w-3 h-3" />
+                  {exporting ? '导出中...' : '一键导出全部'}
+                </button>
+              </div>
+              {/* Export progress */}
+              {exportProgress && (
+                <div className="text-xs space-y-1">
+                  {exportProgress.status === 'running' && (
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 bg-[#F0F1F2] rounded-full h-1.5 overflow-hidden">
+                        <div className="bg-[#3370FF] h-full rounded-full transition-all"
+                          style={{ width: `${exportProgress.total > 0 ? (exportProgress.exported / exportProgress.total * 100) : 0}%` }} />
+                      </div>
+                      <span className="text-[#8F959E]">{exportProgress.exported}/{exportProgress.total}</span>
+                    </div>
+                  )}
+                  {exportProgress.status === 'completed' && (
+                    <div className="flex items-center gap-1 text-green-600">
+                      <Check className="w-3 h-3" />
+                      导出完成！成功 {exportProgress.exported} 条{exportProgress.failed > 0 ? `，失败 ${exportProgress.failed} 条` : ''}
+                    </div>
+                  )}
+                  {exportProgress.status === 'failed' && (
+                    <span className="text-red-500">导出失败，请检查目录路径是否正确</span>
+                  )}
+                </div>
+              )}
             </div>
 
+            {/* Session list */}
             <div className="flex-1 overflow-auto">
               {sessionsLoading ? (
                 <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-[#3370FF] border-t-transparent rounded-full animate-spin" /></div>
@@ -229,13 +303,11 @@ export default function App() {
                       <ArrowLeft className="w-3 h-3" /> 返回列表
                     </button>
                     <h2 className="text-base font-semibold text-[#1F2329] truncate">{sessionObj.title || '无标题'}</h2>
-                    <p className="text-xs text-[#8F959E] mt-0.5">
-                      {sessionObj.project_name} · {sessionObj.message_count || 0} messages
-                    </p>
+                    <p className="text-xs text-[#8F959E] mt-0.5">{sessionObj.project_name} · {sessionObj.message_count || 0} messages</p>
                   </div>
                   <div className="flex gap-2">
                     <button onClick={() => copySessionMarkdown(selectedSession)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 border border-[#DEE0E3] text-sm rounded-lg text-[#646A73] hover:bg-[#F0F1F2] transition-colors">
+                      className="flex items-center gap-1.5 px-3 py-1.5 border border-[#DEE0E3] text-sm rounded-lg text-[#646A73] hover:bg-[#F0F1F2]">
                       {copiedId === selectedSession ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
                       复制
                     </button>

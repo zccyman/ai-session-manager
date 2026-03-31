@@ -53,4 +53,6 @@ out/
 
 # Temporary files
 *.tmp
-*.temp
+*.tempbackend/G:
+*.md
+!README.md

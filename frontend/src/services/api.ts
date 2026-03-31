@@ -116,29 +116,19 @@ export const api = {
     return md;
   },
 
-  batchGetMarkdown: async (sessionIds: string[], sessions: any[], source?: DataSource): Promise<string> => {
-    let md = '';
-    for (const id of sessionIds) {
-      const sess = sessions.find((s: any) => s.id === id);
-      md += `# ${sess?.title || 'Untitled Session'}\n\n`;
-      if (sess?.project_name) md += `**Project:** ${sess.project_name}\n\n`;
-      md += `---\n\n`;
-      const msgs = await fetchApi<any[]>(`/messages/session/${id}/with-parts?source=${source || 'kilo'}`);
-      for (const msg of msgs) {
-        const pd = msg.parsed_data || {};
-        const role = pd.role || 'assistant';
-        let content = '';
-        if (pd.content) content = pd.content;
-        else {
-          for (const part of (msg.parts || [])) {
-            try { const d = typeof part.data === 'string' ? JSON.parse(part.data) : part.data; if (d?.text) { content = d.text; break; } } catch {}
-          }
-        }
-        if (!content) continue;
-        md += `## ${role === 'user' ? '👤 User' : '🤖 AI'}\n\n${content}\n\n`;
-      }
-      md += `\n---\n\n`;
-    }
-    return md;
+  // Start batch export to directory (backend)
+  startExportToDirectory: async (outputDir: string, source: DataSource): Promise<{ task_id: string; total: number; message: string }> => {
+    return fetchApi('/export/to-directory', {
+      method: 'POST',
+      body: JSON.stringify({ output_dir: outputDir, source }),
+    });
+  },
+
+  // Get export progress
+  getExportProgress: async (taskId: string): Promise<{
+    task_id: string; status: string; total: number; exported: number;
+    failed: number; output_dir: string | null; errors: string[];
+  }> => {
+    return fetchApi(`/export/to-directory/progress/${taskId}`);
   },
 };
