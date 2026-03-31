@@ -55,7 +55,8 @@ out/
 *.tmp
 *.temp
 
-# Markdown files (except README)
+# Markdown files (except README and openspec)
 *.md
 !README.md
 !README_CN.md
+!openspec/**/*.md
