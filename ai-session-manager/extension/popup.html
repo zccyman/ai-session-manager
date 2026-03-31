@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { width: 360px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #fff; }
+    .header { padding: 16px; background: #3370FF; color: #fff; }
+    .header h1 { font-size: 16px; font-weight: 600; }
+    .header p { font-size: 12px; opacity: 0.8; margin-top: 4px; }
+    .content { padding: 16px; }
+    .status { padding: 12px; border-radius: 8px; margin-bottom: 12px; font-size: 13px; }
+    .status.info { background: #E8F0FF; color: #3370FF; }
+    .status.success { background: #E8FFF0; color: #00B42A; }
+    .status.error { background: #FFE8E8; color: #F53F3F; }
+    .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-primary { background: #3370FF; color: #fff; }
+    .btn-primary:hover { background: #2860E1; }
+    .btn-secondary { background: #F0F1F2; color: #1F2329; }
+    .btn-secondary:hover { background: #E0E1E2; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .stats { display: flex; gap: 16px; margin: 12px 0; }
+    .stat { flex: 1; text-align: center; padding: 8px; background: #F5F6F7; border-radius: 6px; }
+    .stat-value { font-size: 18px; font-weight: 600; color: #1F2329; }
+    .stat-label { font-size: 11px; color: #8F959E; margin-top: 2px; }
+    .config { padding: 12px 16px; border-top: 1px solid #F0F1F2; }
+    .config label { font-size: 12px; color: #646A73; display: block; margin-bottom: 4px; }
+    .config input { width: 100%; padding: 8px; border: 1px solid #DEE0E3; border-radius: 6px; font-size: 12px; }
+    .hidden { display: none; }
+    .spinner { width: 16px; height: 16px; border: 2px solid #fff; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>AI Session Manager</h1>
+    <p>提取并发送标签页内容</p>
+  </div>
+  
+  <div class="content">
+    <div id="status" class="status info hidden"></div>
+    
+    <div id="statsSection" class="hidden">
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-value" id="questionCount">0</div>
+          <div class="stat-label">提问</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="answerCount">0</div>
+          <div class="stat-label">回答</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="charCount">0</div>
+          <div class="stat-label">字符</div>
+        </div>
+      </div>
+    </div>
+    
+    <button id="extractBtn" class="btn btn-primary">
+      <span>&#128196;</span>
+      <span>提取当前标签页</span>
+    </button>
+    
+    <button id="extractAllBtn" class="btn btn-secondary">
+      <span>&#128196;</span>
+      <span>提取所有标签页</span>
+    </button>
+    
+    <button id="sendBtn" class="btn btn-secondary hidden">
+      <span>&#128640;</span>
+      <span>发送到 AI Session Manager</span>
+    </button>
+    
+    <button id="sendAllBtn" class="btn btn-secondary hidden">
+      <span>&#128640;</span>
+      <span>一键发送所有</span>
+    </button>
+    
+    <button id="copyBtn" class="btn btn-secondary hidden">
+      <span>&#128203;</span>
+      <span>复制到剪贴板</span>
+    </button>
+    
+    <button id="downloadBtn" class="btn btn-secondary hidden">
+      <span>&#128190;</span>
+      <span>下载 Markdown</span>
+    </button>
+  </div>
+  
+  <div class="config">
+    <label>API 地址</label>
+    <input type="text" id="apiUrl" placeholder="http://localhost:8000/api/tab-contents" value="http://localhost:8000/api/tab-contents">
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>

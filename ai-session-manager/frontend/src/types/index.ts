@@ -65,4 +65,24 @@ export interface ProjectStats {
   message_count: number;
 }
 
+export interface TabContentMessage {
+  role: string;
+  content: string;
+}
+
+export interface TabContent {
+  id: string;
+  title: string;
+  url?: string;
+  markdown: string;
+  messages: TabContentMessage[];
+  source: string;
+  created_at: number;
+  updated_at: number;
+  message_count?: number;
+  char_count?: number;
+  created_at_str?: string;
+  updated_at_str?: string;
+}
+
 export type DataSource = 'kilo' | 'opencode';

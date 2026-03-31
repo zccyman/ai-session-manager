@@ -117,6 +117,39 @@ class ExportResponse(BaseModel):
     files: List[dict]
 
 
+class TabContentMessage(BaseModel):
+    role: str
+    content: str
+
+
+class TabContentBase(BaseModel):
+    title: str
+    url: Optional[str] = None
+    markdown: str
+    messages: List[TabContentMessage] = []
+    source: str = "tabbit"
+
+
+class TabContentCreate(TabContentBase):
+    pass
+
+
+class TabContent(TabContentBase):
+    id: str
+    created_at: int
+    updated_at: int
+
+    class Config:
+        from_attributes = True
+
+
+class TabContentWithStats(TabContent):
+    message_count: Optional[int] = None
+    char_count: Optional[int] = None
+    created_at_str: Optional[str] = None
+    updated_at_str: Optional[str] = None
+
+
 def timestamp_to_str(ts: int) -> str:
     """Convert millisecond timestamp to ISO string."""
     try:

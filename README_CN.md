@@ -14,6 +14,7 @@
 - **项目统计** — 会话数量、消息量和热门项目分析
 - **数据导出** — 将会话导出为 Markdown 或 JSON 格式
 - **多数据源** — 支持在 Kilo Code 和 OpenCode 数据源之间切换
+- **浏览器标签页导出** — 通过浏览器扩展提取并保存 TabBitBrowser 聊天内容
 
 ## 截图
 
@@ -85,13 +86,19 @@ ai-session-manager/
 │   │   │   ├── database.py             # 数据库连接
 │   │   │   └── main.py                 # FastAPI 应用
 │   │   └── requirements.txt
-│   └── frontend/                       # React 前端
-│       ├── src/
-│       │   ├── components/             # UI 组件
-│       │   ├── hooks/                  # React Hooks
-│       │   ├── services/               # API 客户端
-│       │   └── types/                  # TypeScript 类型
-│       └── package.json
+│   ├── frontend/                       # React 前端
+│   │   ├── src/
+│   │   │   ├── components/             # UI 组件
+│   │   │   ├── hooks/                  # React Hooks
+│   │   │   ├── services/               # API 客户端
+│   │   │   └── types/                  # TypeScript 类型
+│   │   └── package.json
+│   └── extension/                      # 浏览器扩展
+│       ├── manifest.json               # 扩展配置
+│       ├── popup.html                  # 弹窗界面
+│       ├── popup.js                    # 弹窗逻辑
+│       ├── content.js                  # 内容脚本
+│       └── styles.css                  # 扩展样式
 ├── openspec/                           # OpenSpec 规格
 │   ├── changes/                        # 变更提案
 │   └── specs/                          # 项目规格
@@ -99,6 +106,34 @@ ai-session-manager/
 ├── start.sh                            # 启动脚本
 └── README.md
 ```
+
+## 浏览器扩展
+
+浏览器扩展允许您从 TabBitBrowser 提取聊天内容并发送到 AI Session Manager。
+
+### 安装步骤
+
+1. 打开 Chrome 浏览器，访问 `chrome://extensions/`
+2. 右上角开启"开发者模式"
+3. 点击"加载已解压的扩展程序"
+4. 选择 `ai-session-manager/extension` 文件夹
+
+### 使用方法
+
+1. 访问 TabBitBrowser 聊天页面（`https://web.tabbitbrowser.com/chat/*`）
+2. 点击工具栏中的扩展图标
+3. 选择以下操作之一：
+   - **提取当前标签页** — 提取当前标签页的聊天内容
+   - **提取所有标签页** — 提取所有打开的 TabBitBrowser 标签页
+4. 点击 **发送到 AI Session Manager** 或 **一键发送所有** 保存内容
+
+### 功能特点
+
+- **单标签页提取** — 提取当前标签页的对话
+- **批量提取** — 一键提取所有 TabBitBrowser 标签页
+- **复制到剪贴板** — 直接复制 Markdown 内容
+- **下载为文件** — 保存为 `.md` 文件
+- **API 配置** — 在扩展弹窗中配置 API 地址
 
 ## 技术栈
 

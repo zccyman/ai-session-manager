@@ -14,6 +14,7 @@ A web application for managing and visualizing historical session data from Kilo
 - **Project Statistics** — Analytics on session count, message volume, and popular projects
 - **Data Export** — Export sessions as Markdown or JSON for documentation and archiving
 - **Multi-Source Support** — Switch between Kilo Code and OpenCode data sources
+- **Browser Tab Export** — Extract and save chat content from TabBitBrowser via browser extension
 
 ## Screenshots
 
@@ -85,13 +86,19 @@ ai-session-manager/
 │   │   │   ├── database.py             # Database connection
 │   │   │   └── main.py                 # FastAPI app
 │   │   └── requirements.txt
-│   └── frontend/                       # React frontend
-│       ├── src/
-│       │   ├── components/             # UI components
-│       │   ├── hooks/                  # React hooks
-│       │   ├── services/               # API client
-│       │   └── types/                  # TypeScript types
-│       └── package.json
+│   ├── frontend/                       # React frontend
+│   │   ├── src/
+│   │   │   ├── components/             # UI components
+│   │   │   ├── hooks/                  # React hooks
+│   │   │   ├── services/               # API client
+│   │   │   └── types/                  # TypeScript types
+│   │   └── package.json
+│   └── extension/                      # Browser extension
+│       ├── manifest.json               # Extension manifest
+│       ├── popup.html                  # Extension popup UI
+│       ├── popup.js                    # Popup logic
+│       ├── content.js                  # Content script
+│       └── styles.css                  # Extension styles
 ├── openspec/                           # OpenSpec specifications
 │   ├── changes/                        # Change proposals
 │   └── specs/                          # Project specifications
@@ -99,6 +106,34 @@ ai-session-manager/
 ├── start.sh                            # Startup scripts
 └── README.md
 ```
+
+## Browser Extension
+
+The browser extension allows you to extract chat content from TabBitBrowser and send it to AI Session Manager.
+
+### Installation
+
+1. Open Chrome and navigate to `chrome://extensions/`
+2. Enable "Developer mode" in the top right
+3. Click "Load unpacked"
+4. Select the `ai-session-manager/extension` folder
+
+### Usage
+
+1. Navigate to a TabBitBrowser chat page (`https://web.tabbitbrowser.com/chat/*`)
+2. Click the extension icon in the toolbar
+3. Choose one of the following options:
+   - **Extract Current Tab** — Extract chat from the current tab
+   - **Extract All Tabs** — Extract chats from all open TabBitBrowser tabs
+4. Click **Send to AI Session Manager** or **Send All** to save the content
+
+### Features
+
+- **Single Tab Extraction** — Extract conversation from current tab
+- **Batch Extraction** — Extract from all TabBitBrowser tabs at once
+- **Copy to Clipboard** — Copy markdown content directly
+- **Download as File** — Save as `.md` file
+- **API Configuration** — Configure the API endpoint in the extension popup
 
 ## Tech Stack
 

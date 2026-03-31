@@ -3,19 +3,22 @@ import { SearchBar } from './components/Search/SearchBar';
 import { SearchResults } from './components/Search/SearchResults';
 import { MessageThread } from './components/Messages/MessageThread';
 import { ExportButton } from './components/Export/ExportButton';
+import { TabContents } from './components/TabContents/TabContents';
 import { useProjects, useSessions, useMessages, useSearch, useStats } from './hooks';
 import { api } from './services/api';
 import type { DataSource } from './types';
 import {
   MessageSquare, Folder, ArrowLeft, FileText,
   CheckSquare, Square, Clock, Hash,
-  BarChart3, LayoutGrid, Copy, Check, Download, FolderOpen
+  BarChart3, LayoutGrid, Copy, Check, Download, FolderOpen, Globe
 } from 'lucide-react';
 
 type TimeFilter = 'all' | 'today' | 'week' | 'month';
 type SortBy = 'updated' | 'messages';
+type View = 'sessions' | 'tab-contents';
 
 export default function App() {
+  const [view, setView] = useState<View>('sessions');
   const [dataSource, setDataSource] = useState<DataSource>('kilo');
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
@@ -123,27 +126,50 @@ export default function App() {
         </h1>
         <div className="w-px h-6 bg-[#DEE0E3]" />
         <div className="flex bg-[#F0F1F2] rounded-lg p-0.5">
-          {(['kilo', 'opencode'] as DataSource[]).map(src => (
-            <button key={src} onClick={() => setDataSource(src)}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
-                dataSource === src ? 'bg-white text-[#3370FF] shadow-sm' : 'text-[#8F959E] hover:text-[#646A73]'
-              }`}>
-              {src === 'kilo' ? 'Kilo Code' : 'OpenCode'}
-            </button>
-          ))}
+          <button onClick={() => setView('sessions')}
+            className={`px-3 py-1 rounded-md text-xs font-medium transition-all flex items-center gap-1 ${
+              view === 'sessions' ? 'bg-white text-[#3370FF] shadow-sm' : 'text-[#8F959E] hover:text-[#646A73]'
+            }`}>
+            <MessageSquare className="w-3 h-3" /> 会话
+          </button>
+          <button onClick={() => setView('tab-contents')}
+            className={`px-3 py-1 rounded-md text-xs font-medium transition-all flex items-center gap-1 ${
+              view === 'tab-contents' ? 'bg-white text-[#3370FF] shadow-sm' : 'text-[#8F959E] hover:text-[#646A73]'
+            }`}>
+            <Globe className="w-3 h-3" /> 标签页
+          </button>
         </div>
+        {view === 'sessions' && (
+          <>
+            <div className="w-px h-6 bg-[#DEE0E3]" />
+            <div className="flex bg-[#F0F1F2] rounded-lg p-0.5">
+              {(['kilo', 'opencode'] as DataSource[]).map(src => (
+                <button key={src} onClick={() => setDataSource(src)}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+                    dataSource === src ? 'bg-white text-[#3370FF] shadow-sm' : 'text-[#8F959E] hover:text-[#646A73]'
+                  }`}>
+                  {src === 'kilo' ? 'Kilo Code' : 'OpenCode'}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
         <div className="flex-1 max-w-md mx-4">
           <SearchBar value={searchQuery} onChange={setSearchQuery} />
         </div>
-        <div className="flex items-center gap-4 text-xs text-[#8F959E]">
-          <span className="flex items-center gap-1"><Hash className="w-3 h-3" />{overview?.total_sessions || 0} sessions</span>
-          <span className="flex items-center gap-1"><MessageSquare className="w-3 h-3" />{overview?.total_messages?.toLocaleString() || 0} msgs</span>
-          <span className="flex items-center gap-1"><Folder className="w-3 h-3" />{overview?.total_projects || 0} projects</span>
-        </div>
+        {view === 'sessions' && (
+          <div className="flex items-center gap-4 text-xs text-[#8F959E]">
+            <span className="flex items-center gap-1"><Hash className="w-3 h-3" />{overview?.total_sessions || 0} sessions</span>
+            <span className="flex items-center gap-1"><MessageSquare className="w-3 h-3" />{overview?.total_messages?.toLocaleString() || 0} msgs</span>
+            <span className="flex items-center gap-1"><Folder className="w-3 h-3" />{overview?.total_projects || 0} projects</span>
+          </div>
+        )}
       </header>
 
       {/* Main */}
-      {searchQuery ? (
+      {view === 'tab-contents' ? (
+        <TabContents />
+      ) : searchQuery ? (
         <div className="flex-1 overflow-auto p-6">
           <SearchResults results={searchResults} query={searchQuery} loading={searchLoading} onSelectSession={setSelectedSession} />
         </div>

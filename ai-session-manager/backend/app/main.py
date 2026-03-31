@@ -9,6 +9,7 @@ from app.routes import (
     knowledge,
     export,
     sources,
+    tab_contents,
 )
 
 app = FastAPI(
@@ -33,6 +34,7 @@ app.include_router(stats.router)
 app.include_router(knowledge.router)
 app.include_router(export.router)
 app.include_router(sources.router)
+app.include_router(tab_contents.router)
 
 
 @app.get("/")

@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "AI Session Manager",
+  "version": "1.0.0",
+  "description": "提取 TabBitBrowser 聊天记录并发送到 AI Session Manager",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "*://*.tabbitbrowser.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "AI Session Manager"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.tabbitbrowser.com/*"],
+      "js": ["content.js"],
+      "css": ["styles.css"]
+    }
+  ],
+  "icons": {
+    "16": "icon.png",
+    "32": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
+  }
+}

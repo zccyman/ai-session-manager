@@ -1,4 +1,4 @@
-import type { Session, Message, Project, SearchResult, KnowledgeItem, StatsOverview, StatsTrend, ProjectStats, DataSource } from '../types';
+import type { Session, Message, Project, SearchResult, KnowledgeItem, StatsOverview, StatsTrend, ProjectStats, DataSource, TabContent, TabContentMessage } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
@@ -131,4 +131,34 @@ export const api = {
   }> => {
     return fetchApi(`/export/to-directory/progress/${taskId}`);
   },
+
+  // Tab Contents
+  getTabContents: (params?: { source?: string; limit?: number; offset?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.source) query.set('source', params.source);
+    if (params?.limit) query.set('limit', params.limit.toString());
+    if (params?.offset) query.set('offset', params.offset.toString());
+    return fetchApi<TabContent[]>(`/tab-contents?${query}`);
+  },
+
+  getTabContent: (id: string) => fetchApi<TabContent>(`/tab-contents/${id}`),
+
+  createTabContent: (data: { title: string; url?: string; markdown: string; messages?: TabContentMessage[]; source?: string }) =>
+    fetchApi<TabContent>('/tab-contents', { method: 'POST', body: JSON.stringify(data) }),
+
+  updateTabContent: (id: string, data: { title: string; url?: string; markdown: string; messages?: TabContentMessage[]; source?: string }) =>
+    fetchApi<TabContent>(`/tab-contents/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+
+  deleteTabContent: (id: string) =>
+    fetchApi<{ message: string }>(`/tab-contents/${id}`, { method: 'DELETE' }),
+
+  searchTabContents: (query: string, limit = 50) => {
+    const params = new URLSearchParams();
+    params.set('q', query);
+    params.set('limit', limit.toString());
+    return fetchApi<TabContent[]>(`/tab-contents/search?${params}`);
+  },
+
+  getTabContentMarkdown: (id: string) =>
+    fetchApi<{ title: string; markdown: string }>(`/tab-contents/${id}/markdown`),
 };
