@@ -22,11 +22,18 @@ def list_projects(
 
     projects = []
     for row in rows:
+        # name is often null, use worktree basename as fallback
+        name = row[2]
+        if not name and row[1]:
+            name = row[1].rstrip('/').split('/')[-1]
+        if not name:
+            name = 'Unknown'
+        
         projects.append(
             ProjectWithSessions(
                 id=row[0],
                 worktree=row[1],
-                name=row[2],
+                name=name,
                 session_count=row[3],
                 time_created=row[4],
                 time_updated=row[5],
@@ -55,10 +62,16 @@ def get_project(
     if not row:
         raise HTTPException(status_code=404, detail="Project not found")
 
+    name = row[2]
+    if not name and row[1]:
+        name = row[1].rstrip('/').split('/')[-1]
+    if not name:
+        name = 'Unknown'
+
     return ProjectWithSessions(
         id=row[0],
         worktree=row[1],
-        name=row[2],
+        name=name,
         session_count=row[3],
         time_created=row[4],
         time_updated=row[5],

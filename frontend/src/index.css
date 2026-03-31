@@ -1,28 +1,37 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #6366f1;
-  --color-secondary: #8b5cf6;
-  --color-background: #0f172a;
-  --color-surface: #1e293b;
-  --color-text-primary: #f8fafc;
-  --color-text-secondary: #94a3b8;
-  --color-accent: #22d3ee;
-}
-
-* {
-  box-sizing: border-box;
+  --color-feishu-blue: #3370FF;
+  --color-feishu-blue-light: #E8F0FF;
+  --color-feishu-bg: #F5F6F7;
+  --color-feishu-card: #FFFFFF;
+  --color-feishu-text: #1F2329;
+  --color-feishu-text-secondary: #646A73;
+  --color-feishu-border: #DEE0E3;
+  --color-feishu-hover: #F0F1F2;
 }
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, sans-serif;
-  background: var(--color-background);
-  color: var(--color-text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  background: #F5F6F7;
+  color: #1F2329;
 }
 
-#root {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #C4C7CC; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #8F959E; }
+
+/* Highlight.js theme override for code blocks */
+.hljs {
+  background: #F7F8FA !important;
+  border-radius: 6px;
+  padding: 12px !important;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+pre code {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
 }

@@ -1,47 +1,47 @@
 export interface Session {
-  id: number;
-  project_id: number;
+  id: string;
+  project_id: string;
   title: string;
   directory: string;
-  time_created: string;
-  time_updated: string;
+  time_created: number;
+  time_updated: number;
   message_count?: number;
   project_name?: string;
 }
 
 export interface Message {
-  id: number;
-  session_id: number;
-  time_created: string;
+  id: string;
+  session_id: string;
+  time_created: number;
   data: string;
   parts?: Part[];
 }
 
 export interface Part {
-  id: number;
-  message_id: number;
-  session_id: number;
+  id: string;
+  message_id: string;
+  session_id: string;
   data: string;
 }
 
 export interface Project {
-  id: number;
-  name: string;
+  id: string;
+  name: string | null;
   directory: string;
   session_count?: number;
 }
 
 export interface SearchResult {
-  session_id: number;
+  session_id: string;
   session_title: string;
-  message_id: number;
+  message_id: string;
   snippet: string;
   highlights: string[];
 }
 
 export interface KnowledgeItem {
-  id: number;
-  session_id: number;
+  id: string;
+  session_id: string;
   category: string;
   content: string;
   created_at: string;
@@ -66,10 +66,3 @@ export interface ProjectStats {
 }
 
 export type DataSource = 'kilo' | 'opencode';
-
-export interface AppState {
-  dataSource: DataSource;
-  projects: Project[];
-  selectedProject: number | null;
-  selectedSession: number | null;
-}

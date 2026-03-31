@@ -1,70 +1,31 @@
-import { FileText, MessageSquare } from 'lucide-react';
-import { SearchResult } from '../../types';
+import { FileText } from 'lucide-react';
+import type { Session } from '../../types';
 
 interface SearchResultsProps {
-  results: SearchResult[];
+  results: Session[];
   query: string;
   loading: boolean;
-  onSelectSession: (sessionId: number) => void;
-}
-
-function highlightText(text: string, query: string): string {
-  if (!query.trim()) return text;
-  
-  const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-  return text.replace(regex, '<mark class="bg-indigo-500/40 text-indigo-200 px-0.5 rounded">$1</mark>');
+  onSelectSession: (id: string) => void;
 }
 
 export function SearchResults({ results, query, loading, onSelectSession }: SearchResultsProps) {
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (!query.trim()) {
-    return (
-      <div className="text-center py-12 text-slate-400">
-        <p>Enter a search term to find sessions</p>
-      </div>
-    );
-  }
-
-  if (results.length === 0) {
-    return (
-      <div className="text-center py-12 text-slate-400">
-        <p>No results found for "{query}"</p>
-      </div>
-    );
-  }
+  if (!query) return null;
+  if (loading) return <div className="text-center py-8 text-[#8F959E] text-sm">搜索中...</div>;
+  if (results.length === 0) return <div className="text-center py-8 text-[#8F959E] text-sm">没有找到匹配的会话</div>;
 
   return (
-    <div className="space-y-3">
-      <p className="text-sm text-slate-400 mb-4">{results.length} results found</p>
-      {results.map((result, index) => (
+    <div className="space-y-1">
+      <p className="text-xs text-[#8F959E] mb-3">找到 {results.length} 个会话</p>
+      {results.map(session => (
         <button
-          key={`${result.session_id}-${result.message_id}-${index}`}
-          onClick={() => onSelectSession(result.session_id)}
-          className="w-full text-left p-4 bg-slate-800 rounded-lg border border-slate-700 hover:border-indigo-500/50 transition-all"
+          key={session.id}
+          onClick={() => onSelectSession(session.id)}
+          className="w-full text-left p-3 rounded-lg hover:bg-[#F0F1F2] transition-colors flex items-start gap-3"
         >
-          <div className="flex items-start gap-3">
-            <FileText className="w-5 h-5 text-slate-500 flex-shrink-0 mt-0.5" />
-            <div className="flex-1 min-w-0">
-              <h3 
-                className="text-slate-100 font-medium"
-                dangerouslySetInnerHTML={{ __html: highlightText(result.session_title, query) }}
-              />
-              <p 
-                className="text-sm text-slate-400 mt-1 line-clamp-2"
-                dangerouslySetInnerHTML={{ __html: highlightText(result.snippet, query) }}
-              />
-              <div className="flex items-center gap-2 mt-2 text-xs text-slate-500">
-                <MessageSquare className="w-3 h-3" />
-                Message #{result.message_id}
-              </div>
-            </div>
+          <FileText className="w-4 h-4 text-[#3370FF] mt-0.5 flex-shrink-0" />
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-[#1F2329] truncate">{session.title || '无标题'}</p>
+            <p className="text-xs text-[#8F959E] mt-0.5">{session.project_name || ''}</p>
           </div>
         </button>
       ))}

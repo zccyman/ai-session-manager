@@ -4,10 +4,10 @@ from pathlib import Path
 
 class Config:
     KILO_CODE_DB_PATH = os.getenv(
-        "KILO_CODE_DB_PATH", "/home/zccyman/.local/share/kilo/kilo.db"
+        "KILO_CODE_DB_PATH", str(Path.home() / ".local" / "share" / "kilo" / "kilo.db")
     )
     OPENCODE_DB_PATH = os.getenv(
-        "OPENCODE_DB_PATH", "/home/zccyman/.local/share/opencode/opencode.db"
+        "OPENCODE_DB_PATH", str(Path.home() / ".local" / "share" / "opencode" / "opencode.db")
     )
 
     @classmethod

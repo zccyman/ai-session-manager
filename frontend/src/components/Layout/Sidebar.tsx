@@ -1,44 +1,37 @@
 import { useState } from 'react';
-import { Folder, FileText, BarChart3, Search, Home, ChevronRight } from 'lucide-react';
-import { Project } from '../../types';
+import { Folder, MessageSquare, BarChart3, Search, Home, Zap } from 'lucide-react';
+import type { Project } from '../../types';
 
 interface SidebarProps {
   projects: Project[];
-  selectedProject: number | null;
-  onSelectProject: (id: number | null) => void;
+  selectedProject: string | null;
+  onSelectProject: (id: string | null) => void;
   currentPage: string;
   onNavigate: (page: string) => void;
 }
 
+const navItems = [
+  { id: 'dashboard', label: 'Dashboard', icon: Home },
+  { id: 'sessions', label: 'Sessions', icon: MessageSquare },
+  { id: 'search', label: 'Search', icon: Search },
+  { id: 'stats', label: 'Analytics', icon: BarChart3 },
+];
+
 export function Sidebar({ projects, selectedProject, onSelectProject, currentPage, onNavigate }: SidebarProps) {
-  const [expandedSections, setExpandedSections] = useState<string[]>(['projects']);
-
-  const toggleSection = (section: string) => {
-    setExpandedSections(prev => 
-      prev.includes(section) 
-        ? prev.filter(s => s !== section)
-        : [...prev, section]
-    );
-  };
-
-  const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: Home },
-    { id: 'sessions', label: 'Sessions', icon: FileText },
-    { id: 'search', label: 'Search', icon: Search },
-    { id: 'stats', label: 'Statistics', icon: BarChart3 },
-  ];
+  const [projectsOpen, setProjectsOpen] = useState(true);
 
   return (
-    <aside className="w-60 bg-[#1e293b] border-r border-slate-700 flex flex-col">
-      <nav className="p-3">
+    <aside className="w-64 glass border-r border-indigo-500/10 flex flex-col h-full">
+      {/* Navigation */}
+      <nav className="p-4 space-y-1">
         {navItems.map(item => (
           <button
             key={item.id}
             onClick={() => onNavigate(item.id)}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-              currentPage === item.id 
-                ? 'bg-indigo-500/20 text-indigo-400' 
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              currentPage === item.id
+                ? 'bg-indigo-500/20 text-indigo-300 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
             }`}
           >
             <item.icon className="w-4 h-4" />
@@ -47,42 +40,42 @@ export function Sidebar({ projects, selectedProject, onSelectProject, currentPag
         ))}
       </nav>
 
-      <div className="border-t border-slate-700 mt-2 pt-2">
+      {/* Projects */}
+      <div className="flex-1 overflow-auto px-4 pb-4">
         <button
-          onClick={() => toggleSection('projects')}
-          className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-slate-400 hover:text-slate-200"
+          onClick={() => setProjectsOpen(!projectsOpen)}
+          className="flex items-center justify-between w-full py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider"
         >
-          <span className="flex items-center gap-2">
-            <Folder className="w-4 h-4" />
-            Projects
-          </span>
-          <ChevronRight className={`w-4 h-4 transition-transform ${expandedSections.includes('projects') ? 'rotate-90' : ''}`} />
+          <span>Projects</span>
+          <span className="text-slate-600">{projects.length}</span>
         </button>
-        
-        {expandedSections.includes('projects') && (
-          <div className="px-2 pb-2">
+
+        {projectsOpen && (
+          <div className="space-y-0.5">
             <button
               onClick={() => onSelectProject(null)}
-              className={`w-full text-left px-3 py-1.5 rounded text-sm transition-colors ${
-                selectedProject === null 
-                  ? 'bg-indigo-500/20 text-indigo-400' 
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all ${
+                selectedProject === null
+                  ? 'bg-indigo-500/20 text-indigo-300'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
               }`}
             >
+              <Zap className="w-3.5 h-3.5 text-amber-400" />
               All Projects
             </button>
-            {projects.map(project => (
+            {projects.filter(p => p.name && p.name !== 'Unknown').map(project => (
               <button
                 key={project.id}
                 onClick={() => onSelectProject(project.id)}
-                className={`w-full text-left px-3 py-1.5 rounded text-sm truncate transition-colors ${
-                  selectedProject === project.id 
-                    ? 'bg-indigo-500/20 text-indigo-400' 
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
+                className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all ${
+                  selectedProject === project.id
+                    ? 'bg-indigo-500/20 text-indigo-300'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
                 }`}
-                title={project.directory}
               >
-                {project.name}
+                <Folder className="w-3.5 h-3.5 text-indigo-400" />
+                <span className="truncate">{project.name}</span>
+                <span className="ml-auto text-xs text-slate-600">{project.session_count || 0}</span>
               </button>
             ))}
           </div>

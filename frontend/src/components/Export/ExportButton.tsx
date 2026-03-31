@@ -1,24 +1,21 @@
-import { Download, Loader2 } from 'lucide-react';
+import { Download } from 'lucide-react';
 
 interface ExportButtonProps {
   onExport: () => void;
-  loading?: boolean;
   label?: string;
+  disabled?: boolean;
+  count?: number;
 }
 
-export function ExportButton({ onExport, loading, label = 'Export Markdown' }: ExportButtonProps) {
+export function ExportButton({ onExport, label = 'Export', disabled, count }: ExportButtonProps) {
   return (
     <button
       onClick={onExport}
-      disabled={loading}
-      className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium bg-slate-700 hover:bg-slate-600 disabled:opacity-50 rounded-lg transition-colors"
+      disabled={disabled}
+      className="flex items-center gap-1.5 px-3 py-1.5 bg-[#3370FF] text-white text-sm rounded-lg hover:bg-[#2860E1] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
     >
-      {loading ? (
-        <Loader2 className="w-4 h-4 animate-spin" />
-      ) : (
-        <Download className="w-4 h-4" />
-      )}
-      {label}
+      <Download className="w-3.5 h-3.5" />
+      {count ? `${label} (${count})` : label}
     </button>
   );
 }

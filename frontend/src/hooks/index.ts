@@ -1,187 +1,136 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../services/api';
-import { Session, Project, SearchResult, StatsOverview, StatsTrend, ProjectStats, KnowledgeItem } from '../types';
+import type { Session, Project, SearchResult, StatsOverview, StatsTrend, ProjectStats, KnowledgeItem, DataSource, Message } from '../types';
 
-export function useProjects() {
+export function useProjects(source: DataSource) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetch = useCallback(async () => {
+  useEffect(() => {
     setLoading(true);
-    setError(null);
-    try {
-      const data = await api.getProjects();
-      setProjects(data);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to fetch projects');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    api.getProjects(source)
+      .then(setProjects)
+      .catch(e => setError(e.message))
+      .finally(() => setLoading(false));
+  }, [source]);
 
-  useEffect(() => { fetch(); }, [fetch]);
-
-  return { projects, loading, error, refetch: fetch };
+  return { projects, loading, error };
 }
 
-export function useSessions(projectId?: number) {
+export function useSessions(source: DataSource, projectId?: string) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetch = useCallback(async () => {
+  useEffect(() => {
     setLoading(true);
-    setError(null);
-    try {
-      const data = projectId 
-        ? await api.getSessionsByProject(projectId)
-        : await api.getSessions();
-      setSessions(data);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to fetch sessions');
-    } finally {
-      setLoading(false);
-    }
-  }, [projectId]);
+    api.getSessions({ source, project_id: projectId || undefined, limit: 500 })
+      .then(data => {
+        console.log('[useSessions] loaded', data.length, 'sessions');
+        setSessions(data);
+      })
+      .catch(e => setError(e.message))
+      .finally(() => setLoading(false));
+  }, [source, projectId]);
 
-  useEffect(() => { fetch(); }, [fetch]);
-
-  return { sessions, loading, error, refetch: fetch };
+  return { sessions, loading, error };
 }
 
-export function useSession(id: number) {
+export function useSession(source: DataSource, sessionId: string | null) {
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetch = useCallback(async () => {
+  useEffect(() => {
+    if (!sessionId) { setSession(null); return; }
     setLoading(true);
-    setError(null);
-    try {
-      const data = await api.getSession(id);
-      setSession(data);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to fetch session');
-    } finally {
-      setLoading(false);
-    }
-  }, [id]);
+    api.getSession(sessionId, source)
+      .then(setSession)
+      .catch(e => setError(e.message))
+      .finally(() => setLoading(false));
+  }, [source, sessionId]);
 
-  useEffect(() => { 
-    if (id) fetch(); 
-  }, [id, fetch]);
-
-  return { session, loading, error, refetch: fetch };
+  return { session, loading, error };
 }
 
-export function useMessages(sessionId: number) {
-  const [messages, setMessages] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+export function useMessages(source: DataSource, sessionId: string | null) {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetch = useCallback(async () => {
+  useEffect(() => {
+    if (!sessionId) { setMessages([]); return; }
     setLoading(true);
-    setError(null);
-    try {
-      const data = await api.getMessages(sessionId);
-      const parsed = data.map(m => ({
-        ...m,
-        parsed: JSON.parse(m.data)
-      }));
-      setMessages(parsed);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to fetch messages');
-    } finally {
-      setLoading(false);
-    }
-  }, [sessionId]);
+    api.getMessages(sessionId, source)
+      .then(setMessages)
+      .catch(e => setError(e.message))
+      .finally(() => setLoading(false));
+  }, [source, sessionId]);
 
-  useEffect(() => { 
-    if (sessionId) fetch(); 
-  }, [sessionId, fetch]);
-
-  return { messages, loading, error, refetch: fetch };
+  return { messages, loading, error };
 }
 
-export function useSearch(query: string) {
+export function useSearch(source: DataSource, query: string) {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!query.trim()) {
-      setResults([]);
-      return;
-    }
-    
-    const timer = setTimeout(async () => {
+    if (!query.trim()) { setResults([]); return; }
+    const timer = setTimeout(() => {
       setLoading(true);
-      setError(null);
-      try {
-        const data = await api.search(query);
-        setResults(data);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Search failed');
-      } finally {
-        setLoading(false);
-      }
+      api.search(query, source)
+        .then(setResults)
+        .catch(e => setError(e.message))
+        .finally(() => setLoading(false));
     }, 300);
-
     return () => clearTimeout(timer);
-  }, [query]);
+  }, [source, query]);
 
   return { results, loading, error };
 }
 
-export function useStats() {
+export function useStats(source: DataSource) {
   const [overview, setOverview] = useState<StatsOverview | null>(null);
   const [trends, setTrends] = useState<StatsTrend[]>([]);
   const [projectStats, setProjectStats] = useState<ProjectStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetch = useCallback(async () => {
+  useEffect(() => {
     setLoading(true);
-    setError(null);
-    try {
-      const [overviewData, trendsData, projectData] = await Promise.all([
-        api.getStatsOverview(),
-        api.getStatsTrends(30),
-        api.getStatsProjects(),
-      ]);
-      setOverview(overviewData);
-      setTrends(trendsData);
-      setProjectStats(projectData);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to fetch stats');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    Promise.all([
+      api.getStatsOverview(source),
+      api.getStatsTrends(30, source),
+      api.getStatsProjects(source),
+    ])
+      .then(([o, t, p]) => { setOverview(o); setTrends(t); setProjectStats(p); })
+      .catch(e => setError(e.message))
+      .finally(() => setLoading(false));
+  }, [source]);
 
-  useEffect(() => { fetch(); }, [fetch]);
-
-  return { overview, trends, projectStats, loading, error, refetch: fetch };
+  return { overview, trends, projectStats, loading, error };
 }
 
-export function useKnowledge(sessionId: number) {
+export function useKnowledge(source: DataSource, sessionId: string | null) {
   const [items, setItems] = useState<KnowledgeItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const extract = useCallback(async () => {
+    if (!sessionId) return;
     setLoading(true);
     setError(null);
     try {
-      const data = await api.extractKnowledge(sessionId);
+      const data = await api.extractKnowledge(sessionId, source);
       setItems(data);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to extract knowledge');
+      setError(e instanceof Error ? e.message : 'Failed');
     } finally {
       setLoading(false);
     }
-  }, [sessionId]);
+  }, [source, sessionId]);
 
   return { items, loading, error, extract };
 }

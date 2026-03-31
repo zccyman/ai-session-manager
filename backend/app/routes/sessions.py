@@ -3,6 +3,16 @@ from typing import Optional
 from app.database import get_db
 from app.models import SessionWithProject, timestamp_to_str
 
+
+def _fix_project_name(name, directory):
+    """Fallback: use directory basename if name is null"""
+    if name:
+        return name
+    if directory:
+        return directory.rstrip('/').split('/')[-1] or directory
+    return 'Unknown'
+
+
 router = APIRouter(prefix="/api/sessions", tags=["sessions"])
 
 
@@ -10,7 +20,7 @@ router = APIRouter(prefix="/api/sessions", tags=["sessions"])
 def list_sessions(
     source: str = Query("kilo", description="Data source: kilo or opencode"),
     project_id: Optional[str] = None,
-    limit: int = Query(50, ge=1, le=200),
+    limit: int = Query(50, ge=1, le=500),
     offset: int = Query(0, ge=0),
 ):
     db = get_db(source)
@@ -43,7 +53,7 @@ def list_sessions(
                 directory=row[3],
                 time_created=row[4],
                 time_updated=row[5],
-                project_name=row[6],
+                project_name=_fix_project_name(row[6], row[3]),
                 message_count=row[7],
                 time_created_str=timestamp_to_str(row[4]) if row[4] else None,
                 time_updated_str=timestamp_to_str(row[5]) if row[5] else None,
@@ -80,7 +90,7 @@ def get_session(
         directory=row[3],
         time_created=row[4],
         time_updated=row[5],
-        project_name=row[6],
+        project_name=_fix_project_name(row[6], row[3]),
         message_count=row[7],
         time_created_str=timestamp_to_str(row[4]) if row[4] else None,
         time_updated_str=timestamp_to_str(row[5]) if row[5] else None,
@@ -91,7 +101,7 @@ def get_session(
 def get_sessions_by_project(
     project_id: str,
     source: str = Query("kilo", description="Data source: kilo or opencode"),
-    limit: int = Query(50, ge=1, le=200),
+    limit: int = Query(50, ge=1, le=500),
     offset: int = Query(0, ge=0),
 ):
     db = get_db(source)
@@ -118,7 +128,7 @@ def get_sessions_by_project(
                 directory=row[3],
                 time_created=row[4],
                 time_updated=row[5],
-                project_name=row[6],
+                project_name=_fix_project_name(row[6], row[3]),
                 message_count=row[7],
                 time_created_str=timestamp_to_str(row[4]) if row[4] else None,
                 time_updated_str=timestamp_to_str(row[5]) if row[5] else None,
@@ -159,7 +169,7 @@ def get_sessions_by_date(
                 directory=row[3],
                 time_created=row[4],
                 time_updated=row[5],
-                project_name=row[6],
+                project_name=_fix_project_name(row[6], row[3]),
                 message_count=row[7],
                 time_created_str=timestamp_to_str(row[4]) if row[4] else None,
                 time_updated_str=timestamp_to_str(row[5]) if row[5] else None,
