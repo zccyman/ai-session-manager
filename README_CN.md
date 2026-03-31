@@ -15,6 +15,7 @@ AI 编程助手会话管理工具，支持 Kilo Code、OpenCode 和 TabBitBrowse
 - **数据导出** — 将会话导出为 Markdown 或 JSON 格式
 - **多数据源** — 支持在 Kilo Code 和 OpenCode 数据源之间切换
 - **浏览器标签页导出** — 通过浏览器扩展提取并保存 TabBitBrowser 聊天内容
+- **批量导出到目录** — 将所有标签页内容或会话导出到指定目录（默认 `G:\knowledge\source\browser-export`，支持网页中修改）
 
 ## 截图
 
@@ -134,6 +135,7 @@ ai-session-manager/
 - **复制到剪贴板** — 直接复制 Markdown 内容
 - **下载为文件** — 保存为 `.md` 文件
 - **API 配置** — 在扩展弹窗中配置 API 地址
+- **批量导出到目录** — 将所有标签页内容导出为 Markdown 文件到可配置的目录
 
 ## 技术栈
 

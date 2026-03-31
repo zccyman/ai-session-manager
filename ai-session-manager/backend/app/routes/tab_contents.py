@@ -1,8 +1,13 @@
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Query, HTTPException, BackgroundTasks
+from fastapi.responses import JSONResponse
 from typing import Optional, List
+from pydantic import BaseModel
 import json
 import time
 import uuid
+import os
+import re
+from datetime import datetime
 
 from app.database import get_db
 from app.models import (
@@ -14,6 +19,9 @@ from app.models import (
 )
 
 router = APIRouter(prefix="/api/tab-contents", tags=["tab-contents"])
+
+# In-memory progress tracking for tab content exports
+_tab_export_progress = {}
 
 
 def get_app_db():
@@ -46,7 +54,7 @@ def create_tab_content(content: TabContentCreate):
     now = int(time.time() * 1000)
     messages_json = json.dumps([m.model_dump() for m in content.messages])
 
-    db.execute_query(
+    db.execute_write(
         """INSERT INTO tab_contents (id, title, url, markdown, messages, source, created_at, updated_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
         (
@@ -59,6 +67,17 @@ def create_tab_content(content: TabContentCreate):
             now,
             now,
         ),
+    )
+
+    return TabContent(
+        id=content_id,
+        title=content.title,
+        url=content.url,
+        markdown=content.markdown,
+        messages=content.messages,
+        source=content.source,
+        created_at=now,
+        updated_at=now,
     )
 
     return TabContent(
@@ -215,7 +234,7 @@ def update_tab_content(content_id: str, content: TabContentCreate):
     if not existing:
         raise HTTPException(status_code=404, detail="Tab content not found")
 
-    db.execute_query(
+    db.execute_write(
         """UPDATE tab_contents SET title=?, url=?, markdown=?, messages=?, source=?, updated_at=?
            WHERE id=?""",
         (
@@ -251,7 +270,7 @@ def delete_tab_content(content_id: str):
     if not existing:
         raise HTTPException(status_code=404, detail="Tab content not found")
 
-    db.execute_query("DELETE FROM tab_contents WHERE id = ?", (content_id,))
+    db.execute_write("DELETE FROM tab_contents WHERE id = ?", (content_id,))
 
     return {"message": "Deleted successfully"}
 
@@ -268,3 +287,165 @@ def export_markdown(content_id: str):
         raise HTTPException(status_code=404, detail="Tab content not found")
 
     return {"title": row[0], "markdown": row[1]}
+
+
+def _sanitize_filename(name: str, max_len: int = 80) -> str:
+    name = re.sub(r'[<>:"/\\|?*\n\r\t]', "", name)
+    name = re.sub(r"\s+", "-", name)
+    name = name.strip("-.")
+    return name[:max_len] if name else "untitled"
+
+
+def _convert_windows_path(path: str) -> str:
+    """Convert Windows path to WSL path if needed."""
+    m = re.match(r"^([A-Za-z]):[\\/](.*)$", path)
+    if m:
+        return f"/mnt/{m.group(1).lower()}/{m.group(2).replace('\\', '/')}"
+    return path
+
+
+class TabExportRequest(BaseModel):
+    output_dir: str
+    source: Optional[str] = None
+
+
+class TabExportProgress(BaseModel):
+    task_id: str
+    status: str
+    total: int
+    exported: int
+    failed: int
+    output_dir: Optional[str] = None
+    errors: List[str] = []
+
+
+@router.post("/export-to-directory")
+def export_tab_contents_to_directory(
+    request: TabExportRequest, background_tasks: BackgroundTasks
+):
+    """Export all tab contents as markdown files to a directory."""
+    task_id = str(uuid.uuid4())[:8]
+    _tab_export_progress[task_id] = {
+        "task_id": task_id,
+        "status": "running",
+        "total": 0,
+        "exported": 0,
+        "failed": 0,
+        "output_dir": request.output_dir,
+        "errors": [],
+    }
+
+    def _run_export():
+        try:
+            output_dir = _convert_windows_path(request.output_dir)
+            os.makedirs(output_dir, exist_ok=True)
+
+            db = get_app_db()
+            query = "SELECT id, title, url, markdown, messages, source, created_at, updated_at FROM tab_contents"
+            params = []
+            if request.source:
+                query += " WHERE source = ?"
+                params.append(request.source)
+            query += " ORDER BY updated_at DESC"
+
+            rows = db.execute_query(query, tuple(params) if params else ())
+            total = len(rows)
+
+            if total == 0:
+                _tab_export_progress[task_id].update(
+                    {
+                        "status": "completed",
+                        "total": 0,
+                        "exported": 0,
+                        "failed": 0,
+                        "output_dir": output_dir,
+                        "errors": [],
+                    }
+                )
+                return
+
+            exported = 0
+            failed = 0
+            errors = []
+
+            for i, row in enumerate(rows):
+                (
+                    content_id,
+                    title,
+                    url,
+                    markdown,
+                    messages_json,
+                    source,
+                    created_at,
+                    updated_at,
+                ) = row
+
+                if not markdown:
+                    failed += 1
+                    errors.append(f"Tab {content_id}: no content")
+                    continue
+
+                try:
+                    # Build markdown with metadata header
+                    md_lines = [f"# {title or 'Untitled'}\n"]
+                    if url:
+                        md_lines.append(f"**URL:** {url}\n")
+                    if source:
+                        md_lines.append(f"**Source:** {source}\n")
+                    if created_at:
+                        try:
+                            created_str = datetime.fromtimestamp(
+                                created_at / 1000
+                            ).strftime("%Y-%m-%d %H:%M")
+                            md_lines.append(f"**Created:** {created_str}\n")
+                        except Exception:
+                            pass
+                    md_lines.append(f"\n---\n\n{markdown}")
+
+                    safe_title = _sanitize_filename(title or f"tab-{i + 1}")
+                    timestamp = ""
+                    if updated_at:
+                        try:
+                            ts = datetime.fromtimestamp(updated_at / 1000)
+                            timestamp = ts.strftime("%Y%m%d-%H%M") + "-"
+                        except Exception:
+                            pass
+                    filename = f"{str(i + 1).zfill(6)}-{timestamp}{safe_title}.md"
+
+                    filepath = os.path.join(output_dir, filename)
+                    with open(filepath, "w", encoding="utf-8") as f:
+                        f.write("\n".join(md_lines))
+
+                    exported += 1
+                except Exception as e:
+                    failed += 1
+                    errors.append(f"Tab {content_id}: {str(e)}")
+
+            _tab_export_progress[task_id].update(
+                {
+                    "status": "completed",
+                    "total": total,
+                    "exported": exported,
+                    "failed": failed,
+                    "output_dir": output_dir,
+                    "errors": errors[:10],
+                }
+            )
+        except Exception as e:
+            _tab_export_progress[task_id].update(
+                {
+                    "status": "failed",
+                    "errors": [str(e)],
+                }
+            )
+
+    background_tasks.add_task(_run_export)
+    return {"task_id": task_id, "message": "Export started in background"}
+
+
+@router.get("/export-to-directory/progress/{task_id}")
+def get_tab_export_progress(task_id: str):
+    """Get progress of a tab content batch export task."""
+    if task_id not in _tab_export_progress:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return _tab_export_progress[task_id]

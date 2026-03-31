@@ -161,4 +161,14 @@ export const api = {
 
   getTabContentMarkdown: (id: string) =>
     fetchApi<{ title: string; markdown: string }>(`/tab-contents/${id}/markdown`),
+
+  // Export tab contents to directory
+  exportTabContentsToDirectory: (outputDir: string, source?: string) =>
+    fetchApi<{ task_id: string; message: string }>('/tab-contents/export-to-directory', {
+      method: 'POST',
+      body: JSON.stringify({ output_dir: outputDir, source }),
+    }),
+
+  getTabExportProgress: (taskId: string) =>
+    fetchApi<{ task_id: string; status: string; total: number; exported: number; failed: number; output_dir: string | null; errors: string[] }>(`/tab-contents/export-to-directory/progress/${taskId}`),
 };

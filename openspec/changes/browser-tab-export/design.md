@@ -40,7 +40,9 @@ class TabContent(BaseModel):
 | PUT | /api/tab-contents/{id} | 更新内容 |
 | DELETE | /api/tab-contents/{id} | 删除内容 |
 | GET | /api/tab-contents/search?q= | 搜索 |
-| GET | /api/tab-contents/{id}/markdown | 导出 Markdown |
+| GET | /api/tab-contents/{id}/markdown | 导出单个 Markdown |
+| POST | /api/tab-contents/export-to-directory | 批量导出到目录 |
+| GET | /api/tab-contents/export-to-directory/progress/{task_id} | 查询导出进度 |
 
 ### 数据库表
 
@@ -63,13 +65,16 @@ CREATE TABLE tab_contents (
 
 ```
 TabContents
+├── SearchBar
 ├── TabContentList (列表页)
-│   ├── SearchBar
 │   └── TabContentCard
-└── TabContentDetail (详情页)
-    ├── MarkdownPreview
-    ├── CopyButton
-    └── DownloadButton
+├── TabContentDetail (详情页)
+│   ├── MarkdownPreview
+│   ├── CopyButton
+│   └── DownloadButton
+└── BatchExportPanel (批量导出面板)
+    ├── ExportDirInput (目录输入，默认 G:\knowledge\source\browser-export)
+    └── ExportButton + ProgressDisplay
 ```
 
 ### 状态管理

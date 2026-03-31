@@ -1,10 +1,12 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { SearchBar } from '../Search/SearchBar';
 import { TabContentList } from './TabContentList';
 import { TabContentDetail } from './TabContentDetail';
 import { api } from '../../services/api';
 import type { TabContent } from '../../types';
-import { Globe, Plus } from 'lucide-react';
+import { Globe, Plus, RefreshCw, Download, Loader2 } from 'lucide-react';
+
+const DEFAULT_EXPORT_DIR = 'G:\\knowledge\\source\\browser-export';
 
 export function TabContents() {
   const [contents, setContents] = useState<TabContent[]>([]);
@@ -13,6 +15,11 @@ export function TabContents() {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState<{ status: string; total: number; exported: number; failed: number; output_dir: string | null; errors: string[] } | null>(null);
+  const [showExportConfig, setShowExportConfig] = useState(false);
+  const [exportDir, setExportDir] = useState(DEFAULT_EXPORT_DIR);
+  const exportPollRef = useRef<number | null>(null);
 
   const loadContents = useCallback(async () => {
     setLoading(true);
@@ -30,6 +37,14 @@ export function TabContents() {
 
   useEffect(() => {
     loadContents();
+  }, [loadContents]);
+
+  // Auto-refresh every 10 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadContents();
+    }, 10000);
+    return () => clearInterval(interval);
   }, [loadContents]);
 
   useEffect(() => {
@@ -74,6 +89,46 @@ export function TabContents() {
     }
   }, [selectedId]);
 
+  const handleExport = useCallback(async () => {
+    if (!exportDir.trim()) return;
+    setExporting(true);
+    setExportProgress(null);
+    try {
+      const { task_id } = await api.exportTabContentsToDirectory(exportDir.trim());
+      setShowExportConfig(false);
+
+      const poll = async () => {
+        try {
+          const progress = await api.getTabExportProgress(task_id);
+          setExportProgress(progress);
+          if (progress.status === 'completed' || progress.status === 'failed') {
+            setExporting(false);
+            if (exportPollRef.current) {
+              clearInterval(exportPollRef.current);
+              exportPollRef.current = null;
+            }
+          }
+        } catch (e) {
+          console.error('Poll error:', e);
+        }
+      };
+
+      exportPollRef.current = window.setInterval(poll, 500);
+      poll();
+    } catch (error) {
+      console.error('Export failed:', error);
+      setExporting(false);
+    }
+  }, [exportDir]);
+
+  useEffect(() => {
+    return () => {
+      if (exportPollRef.current) {
+        clearInterval(exportPollRef.current);
+      }
+    };
+  }, []);
+
   const handleAdd = useCallback(async () => {
     const markdown = prompt('粘贴 Markdown 内容：');
     if (!markdown) return;
@@ -105,7 +160,74 @@ export function TabContents() {
           <Plus className="w-4 h-4" />
           手动添加
         </button>
+        <button
+          onClick={() => setShowExportConfig(!showExportConfig)}
+          disabled={exporting}
+          className="flex items-center gap-1 px-3 py-1.5 bg-[#34C759] text-white text-sm rounded-lg hover:bg-[#2DB14D] disabled:opacity-50"
+        >
+          {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+          批量导出
+        </button>
+        <button
+          onClick={() => loadContents()}
+          disabled={loading}
+          className="flex items-center gap-1 px-3 py-1.5 border border-[#DEE0E3] text-sm rounded-lg text-[#646A73] hover:bg-[#F0F1F2] disabled:opacity-50"
+        >
+          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          刷新
+        </button>
       </div>
+
+      {/* Export config panel */}
+      {showExportConfig && (
+        <div className="p-3 border-b border-[#DEE0E3] bg-[#F8F9FA] flex items-center gap-3">
+          <label className="text-sm text-[#646A73] whitespace-nowrap">导出目录：</label>
+          <input
+            type="text"
+            value={exportDir}
+            onChange={(e) => setExportDir(e.target.value)}
+            className="flex-1 px-3 py-1.5 border border-[#DEE0E3] rounded-lg text-sm focus:outline-none focus:border-[#3370FF]"
+            placeholder="G:\knowledge\source\browser-export"
+          />
+          <button
+            onClick={handleExport}
+            disabled={exporting || !exportDir.trim()}
+            className="flex items-center gap-1 px-4 py-1.5 bg-[#34C759] text-white text-sm rounded-lg hover:bg-[#2DB14D] disabled:opacity-50"
+          >
+            {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            开始导出
+          </button>
+          <button
+            onClick={() => setShowExportConfig(false)}
+            className="text-sm text-[#8F959E] hover:text-[#646A73]"
+          >
+            取消
+          </button>
+        </div>
+      )}
+
+      {/* Export progress */}
+      {exportProgress && (
+        <div className={`p-3 border-b border-[#DEE0E3] text-sm ${exportProgress.status === 'completed' ? 'bg-[#E8F5E9] text-[#2E7D32]' : exportProgress.status === 'failed' ? 'bg-[#FFEBEE] text-[#C62828]' : 'bg-[#E8F0FF] text-[#3370FF]'}`}>
+          {exportProgress.status === 'completed' ? (
+            <div className="flex items-center justify-between">
+              <span>导出完成：{exportProgress.exported}/{exportProgress.total} 个文件已保存到 {exportProgress.output_dir}</span>
+              {exportProgress.failed > 0 && <span className="text-[#FF9800]">（{exportProgress.failed} 个失败）</span>}
+              <button onClick={() => setExportProgress(null)} className="text-xs text-[#8F959E] hover:text-[#646A73]">关闭</button>
+            </div>
+          ) : exportProgress.status === 'failed' ? (
+            <div className="flex items-center justify-between">
+              <span>导出失败：{exportProgress.errors.join(', ')}</span>
+              <button onClick={() => setExportProgress(null)} className="text-xs text-[#8F959E] hover:text-[#646A73]">关闭</button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>正在导出...</span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Main */}
       <div className="flex-1 flex overflow-hidden">

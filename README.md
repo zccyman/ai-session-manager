@@ -15,6 +15,7 @@ AI coding assistant session manager with browser extension - supports Kilo Code,
 - **Data Export** — Export sessions as Markdown or JSON for documentation and archiving
 - **Multi-Source Support** — Switch between Kilo Code and OpenCode data sources
 - **Browser Tab Export** — Extract and save chat content from TabBitBrowser via browser extension
+- **Batch Export to Directory** — Export all tab contents or sessions to a specified directory (default: `G:\knowledge\source\browser-export`, configurable in UI)
 
 ## Screenshots
 
@@ -134,6 +135,7 @@ The browser extension allows you to extract chat content from TabBitBrowser and 
 - **Copy to Clipboard** — Copy markdown content directly
 - **Download as File** — Save as `.md` file
 - **API Configuration** — Configure the API endpoint in the extension popup
+- **Batch Export to Directory** — Export all tab contents as Markdown files to a configurable directory
 
 ## Tech Stack
 
