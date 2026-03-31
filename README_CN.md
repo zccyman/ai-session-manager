@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-管理和可视化 Kilo Code 与 OpenCode AI 编程助手的历史会话数据的 Web 应用。
+AI 编程助手会话管理工具，支持 Kilo Code、OpenCode 和 TabBitBrowser，提供搜索、导出和批量提取功能。
 
 ## 功能特性
 

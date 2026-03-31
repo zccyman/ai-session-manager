@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A web application for managing and visualizing historical session data from Kilo Code and OpenCode AI coding assistants.
+AI coding assistant session manager with browser extension - supports Kilo Code, OpenCode, and TabBitBrowser with search, export, and batch extraction.
 
 ## Features
 
